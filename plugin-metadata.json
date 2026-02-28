@@ -1,0 +1,11 @@
+{
+    "name": "autorestart",
+    "alias": "autorestart",
+    "display_name": "Auto Restart",
+    "description": "Automatically restarts the server when no players are connected",
+    "author": "zer0.k",
+    "url": "http://www.sourcemm.net/",
+    "log_tag": "AUTORESTART",
+    "license": "AGPLv3",
+    "version": "1.0.0.{{git-shorthash}}"
+}
