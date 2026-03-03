@@ -1,3 +1,2 @@
-Metamod plugin that automatically stops the server when no players are connected. To be used with external autorestart tools.
-
+Metamod plugin that automatically stops the server when no players are connected.
 Might not work.
