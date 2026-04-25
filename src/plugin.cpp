@@ -15,7 +15,7 @@
 #include <iserver.h>
 #include "serversideclient.h"
 
-SH_DECL_HOOK1_void(IGameSystem, ServerGamePostSimulate, SH_NOATTRIB, false, const EventServerGamePostSimulate_t *);
+SH_DECL_HOOK1_void(IGameSystem, OnServerGamePostSimulate, SH_NOATTRIB, false, const EventServerGamePostSimulate_t *);
 SH_DECL_HOOK0_void(IServerGameDLL, GameServerSteamAPIActivated, SH_NOATTRIB, 0);
 
 MMSPlugin g_ThisPlugin;
@@ -186,7 +186,7 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 
 	g_serverGamePostSimulateHook = SH_ADD_DVPHOOK(
 		IGameSystem,
-		ServerGamePostSimulate,
+		OnServerGamePostSimulate,
 		(IGameSystem *)g_serverModule->FindVirtualTable("CEntityDebugGameSystem"),
 		SH_STATIC(Hook_ServerGamePostSimulate),
 		false
