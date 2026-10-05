@@ -3,13 +3,15 @@
 
 #include <ISmmPlugin.h>
 #include <igameevents.h>
-#include <sh_vector.h>
+#include <igamesystem.h>
 #include "version_gen.h"
 
 
 class MMSPlugin : public ISmmPlugin, public IMetamodListener
 {
 public:
+	MMSPlugin();
+	KHook::Return<void> Hook_ServerGamePostSimulate(IGameSystem *, const EventServerGamePostSimulate_t *);
 	bool Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late);
 	bool Unload(char *error, size_t maxlen);
 	void AllPluginsLoaded();
@@ -22,6 +24,7 @@ public:
 	const char *GetVersion() { return PLUGIN_FULL_VERSION; }
 	const char *GetDate() { return __DATE__; }
 	const char *GetLogTag() { return PLUGIN_LOGTAG; }
+	KHook::Virtual<IGameSystem, void, const EventServerGamePostSimulate_t *> m_serverGamePostSimulateHook;
 };
 
 extern MMSPlugin g_ThisPlugin;

@@ -15,9 +15,6 @@
 #include <iserver.h>
 #include "serversideclient.h"
 
-SH_DECL_HOOK1_void(IGameSystem, OnServerGamePostSimulate, SH_NOATTRIB, false, const EventServerGamePostSimulate_t *);
-SH_DECL_HOOK0_void(IServerGameDLL, GameServerSteamAPIActivated, SH_NOATTRIB, 0);
-
 MMSPlugin g_ThisPlugin;
 PLUGIN_EXPOSE(MMSPlugin, g_ThisPlugin);
 
@@ -25,7 +22,8 @@ IGameEventSystem *g_pGameEventSystem = nullptr;
 ISource2Server *g_pServer = nullptr;
 static void *g_pGameResourceService = nullptr;
 static CModule *g_serverModule = nullptr;
-static int g_serverGamePostSimulateHook = 0;
+static void **g_serverGameSystemVtable = nullptr;
+static constexpr std::uint32_t IGAME_SYSTEM_SERVER_GAME_POST_SIMULATE_INDEX = 37;
 
 // Watchdog file-change state
 static bool g_bWatchdogShutdownPending = false;
@@ -148,7 +146,14 @@ int GetPlayerCount()
 	return count;
 }
 
-static void Hook_ServerGamePostSimulate(const EventServerGamePostSimulate_t *)
+MMSPlugin::MMSPlugin()
+	: m_serverGamePostSimulateHook(IGAME_SYSTEM_SERVER_GAME_POST_SIMULATE_INDEX, this,
+		&MMSPlugin::Hook_ServerGamePostSimulate, nullptr)
+{
+}
+
+KHook::Return<void> MMSPlugin::Hook_ServerGamePostSimulate(
+	IGameSystem *, const EventServerGamePostSimulate_t *)
 {
 	static double lastCheckTime = 0.0;
 	if (SteamGameServer() && Plat_FloatTime() - lastCheckTime > 5.0f)
@@ -165,7 +170,7 @@ static void Hook_ServerGamePostSimulate(const EventServerGamePostSimulate_t *)
 			g_pEngineServer->ServerCommand("quit");
 		}
 	}
-	RETURN_META(MRES_IGNORED);
+	return { KHook::Action::Ignore };
 }
 
 
@@ -184,13 +189,8 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkServerService, INetworkServerService, NETWORKSERVERSERVICE_INTERFACE_VERSION);
 	g_serverModule = new CModule(GAMEBIN, "server");
 
-	g_serverGamePostSimulateHook = SH_ADD_DVPHOOK(
-		IGameSystem,
-		OnServerGamePostSimulate,
-		(IGameSystem *)g_serverModule->FindVirtualTable("CEntityDebugGameSystem"),
-		SH_STATIC(Hook_ServerGamePostSimulate),
-		false
-	);
+	g_serverGameSystemVtable = static_cast<void **>(g_serverModule->FindVirtualTable("CEntityDebugGameSystem"));
+	m_serverGamePostSimulateHook.AddGlobal(reinterpret_cast<IGameSystem *>(&g_serverGameSystemVtable));
 	META_CONVAR_REGISTER(FCVAR_RELEASE | FCVAR_GAMEDLL);
 
 	return true;
@@ -198,7 +198,8 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 
 bool MMSPlugin::Unload(char *error, size_t maxlen)
 {
-	SH_REMOVE_HOOK_ID(g_serverGamePostSimulateHook);
+	m_serverGamePostSimulateHook.RemoveGlobal(reinterpret_cast<IGameSystem *>(&g_serverGameSystemVtable));
+	g_serverGameSystemVtable = nullptr;
 
 	delete g_serverModule;
 	g_serverModule = nullptr;
