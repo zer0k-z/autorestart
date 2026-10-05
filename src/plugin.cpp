@@ -23,7 +23,6 @@ ISource2Server *g_pServer = nullptr;
 static void *g_pGameResourceService = nullptr;
 static CModule *g_serverModule = nullptr;
 static void **g_serverGameSystemVtable = nullptr;
-static constexpr std::uint32_t IGAME_SYSTEM_SERVER_GAME_POST_SIMULATE_INDEX = 37;
 
 // Watchdog file-change state
 static bool g_bWatchdogShutdownPending = false;
@@ -147,8 +146,8 @@ int GetPlayerCount()
 }
 
 MMSPlugin::MMSPlugin()
-	: m_serverGamePostSimulateHook(IGAME_SYSTEM_SERVER_GAME_POST_SIMULATE_INDEX, this,
-		&MMSPlugin::Hook_ServerGamePostSimulate, nullptr)
+	: m_serverGamePostSimulateHook(&IGameSystem::OnServerGamePostSimulate, this,
+		nullptr, &MMSPlugin::Hook_ServerGamePostSimulate)
 {
 }
 
